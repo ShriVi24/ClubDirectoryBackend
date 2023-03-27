@@ -1,3 +1,4 @@
+// start of shrivi
 const { json } = require('express');
 const express = require('express');
 const app = express();
@@ -6,7 +7,10 @@ const mongoose = require('mongoose');
 
 const User = require('./schema/User');
 const Admin = require('./schema/Admin');
+const Clubs = require('./schema/Clubs');
+
 const bcrypt = require('bcryptjs');
+const { findOneAndUpdate } = require('./schema/User');
 
 app.use(json());
 app.listen(port, () => console.log(`Listening on port ${port}`));
@@ -36,7 +40,9 @@ app.post("/api/users/signup", (req, res) => {
         res.status(400).send(err);
     });
 })
+// end of shrivi
 
+// start of kirthi
 app.post("/api/users/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -53,8 +59,8 @@ app.post("/api/users/login", async (req, res) => {
     }
 });
 
-app.get("/api/users", (req, res) => {
-    const users = User.find();
+app.get("/api/users", async (req, res) => {
+    const users = await User.find();
     const selectedparams = users.map(user => {
         return {
             name: user.name,
@@ -65,7 +71,9 @@ app.get("/api/users", (req, res) => {
     });
     res.send(selectedparams);
 });
+// end of kirthi
 
+// start of samrdhhi
 app.post("/api/admin/signup", (req, res) => {
     const { name, email, password, clubId } = req.body;
     const hashpassword = bcrypt.hashSync(password, 10);
@@ -107,4 +115,66 @@ app.get("/api/admin", (req, res) => {
     }
     res.send(admins);
 });
+// end of samrddhi
 
+// start of Daf
+
+app.post("/api/addclub/:clubid",(req,res)=>{
+    const {clubid} = req.params;
+    const {name, description, slogan, advisor, m_count} = req.body;
+    const club = new Clubs({
+        clubid,
+        name,
+        description,
+        slogan,
+        advisor,
+        m_count
+    });
+    club.save().then(()=>{
+        res.status(201).send(`Club added ${club}`);
+    }).catch(err => {
+        res.status(400).send(err);
+    });
+})
+
+app.get("/api/club/:clubid",async (req,res)=>{
+    const {clubid} = req.params;
+    const club = await Clubs.find({clubid});
+    if(!club){
+        res.status(404).send("Club not found");
+    }
+    res.send(club);
+})
+
+app.get("/api/club",async (req,res)=>{
+    const clubs = await Clubs.find();
+    if(!clubs){
+        res.status(404).send("No clubs found");
+    }
+    res.send(clubs);
+})
+// end of Daf
+
+// start of NXPP 
+app.patch("/api/club/update/:clubid",async (req,res)=>{
+    const {clubid} = req.params;
+    const club = await Clubs.findOneAndUpdate(
+        {clubid:clubid},
+        req.body,
+        {new: false});
+    if (!club) {
+        res.status(404).send("Club not found");
+    }
+    res.json({msg:"Post updated"});
+});
+
+app.delete("/api/club/delete/:clubid",async (req,res)=>{
+    const {clubid} = req.params;
+    try{
+        const club = await Clubs.findOneAndDelete({clubid});
+        res.send("Club deleted",club);
+    }catch(err){
+        res.status(404).send("Club not found");
+    }
+
+})
