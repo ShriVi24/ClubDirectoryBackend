@@ -26,6 +26,14 @@ app.get('/', (req, res) => {
 
 app.post("/api/users/signup", (req, res) => {
     const { name, email, password, clubId, roll } = req.body;
+    // validate email
+    if (!email.includes("@")) {
+        res.status(400).send("Invalid email");
+    }
+    // validate password
+    if (password.length<6) {
+        res.status(400).send("Password should be atleast 6 characters");
+    }
     const hashpassword = bcrypt.hashSync(password, 10);
     const user = new User({
         name,
@@ -76,6 +84,13 @@ app.get("/api/users", async (req, res) => {
 // start of samrdhhi
 app.post("/api/admin/signup", (req, res) => {
     const { name, email, password, clubId } = req.body;
+    if (!email.includes("@")) {
+        res.status(400).send("Invalid email");
+    }
+    // validate password
+    if (password.length<6) {
+        res.status(400).send("Password should be atleast 6 characters");
+    }
     const hashpassword = bcrypt.hashSync(password, 10);
     const admin = new Admin({
         name,
@@ -107,18 +122,20 @@ app.post("/api/admin/login", async (req, res) => {
 });
 
 
-app.get("/api/admin", (req, res) => {
-    const admins = Admin.find();
-    console.log(admins);
-    if (!admins) {
-        res.status(404).send("No admins created");
-    }
-    res.send(admins);
+app.get("/api/admins", async (req, res) => {
+    const admins = await Admin.find();
+    const selectedparams = admins.map(user => {
+        return {
+            name: user.name,
+            email: user.email,
+            clubId: user.clubId
+        }
+    });
+    res.send(selectedparams);
 });
 // end of samrddhi
 
 // start of Daf
-
 app.post("/api/addclub/:clubid",(req,res)=>{
     const {clubid} = req.params;
     const {name, description, slogan, advisor, m_count} = req.body;
@@ -168,13 +185,17 @@ app.patch("/api/club/update/:clubid",async (req,res)=>{
     res.json({msg:"Post updated"});
 });
 
-app.delete("/api/club/delete/:clubid",async (req,res)=>{
-    const {clubid} = req.params;
+app.delete("/api/users/delete/:rollno",async (req,res)=>{
+    const {rollno} = req.params;
+    // console.log(rollno);
     try{
-        const club = await Clubs.findOneAndDelete({clubid});
-        res.send("Club deleted",club);
+        const user = await User.findOneAndDelete({roll:rollno});
+        if(!user){
+            res.status(404).send("User not found")
+        }
+        res.status(200).send("User deleted");
     }catch(err){
-        res.status(404).send("Club not found");
+        res.status(500).send(err.message);
     }
 
 })
